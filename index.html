@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>MITHANS • Quick Question</title>
+  <style>
+    #question-area { display: none; }
+    #question-area.show { display: block; }
+
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;font-family:Arial,sans-serif;background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)}
+    .card{width:min(92%,430px);padding:34px 26px;background:#fff;border-radius:26px;text-align:center;box-shadow:0 20px 60px #0004}
+    .logo{font-size:30px;font-weight:800;letter-spacing:4px}.sub{color:#777;margin:8px 0 28px}h1{font-size:28px}
+    input{width:100%;padding:14px;border:1px solid #ddd;border-radius:12px;font-size:16px;outline:0;margin:8px 0 18px}
+    .buttons{display:flex;gap:14px}.buttons button{flex:1;padding:14px;border:0;border-radius:12px;color:#fff;font-size:18px;font-weight:700;cursor:pointer}.yes{background:#22c55e}.no{background:#ef4444}
+    button:disabled{opacity:.6;cursor:not-allowed}.result{display:none;margin-top:22px;font-weight:700;font-size:18px}.note{font-size:12px;color:#888;margin-top:22px}
+  </style>
+</head>
+<body>
+<main class="card">
+  <div class="logo">MITHANS</div><div id="question-area"><div class="sub">Just one quick question...</div>
+  <h1>Did you enjoy your visit to MITHANS? 😊</h1>
+  <input id="Aage jane ke liye apna real name ya Instagram username likho" maxlength="30" placeholder="Instagram username (optional)">
+  <div class="buttons">
+    <button class="yes" data-answer="YES">YES 👍</button>
+    <button class="no" data-answer="NO">NO 👎</button>
+  </div></div>
+  <div id="result" class="result"></div>
+  <div class="note">Username is optional. Instagram does not provide a visitor's username to this website automatically.</div>
+</main>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+  // Replace ONLY these values with your Firebase Web App config.
+  const firebaseConfig = {
+    apiKey: "AIzaSyD5uVOkqlPUdiJBJQjjof9CJ-iuYL5fiu0",
+    authDomain: "mithans11-babc0.firebaseapp.com",
+    projectId: "mithans11-babc0",
+    storageBucket: "mithans11-babc0.firebasestorage.app",
+    messagingSenderId: "775548184836",
+    appId: "1:775548184836:web:7626bc31a04404293b4851"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  let visitorId = localStorage.getItem("mithansVisitorId");
+  if (!visitorId) {
+    visitorId = crypto.randomUUID();
+    localStorage.setItem("mithansVisitorId", visitorId);
+  }
+
+  async function answer(choice) {
+    const username = document.getElementById("username").value.trim().replace(/^@/, "");
+    const buttons = document.querySelectorAll("button");
+    buttons.forEach(b => b.disabled = true);
+
+    try {
+      await addDoc(collection(db, "responses"), {
+        username: username || null,
+        answer: choice,
+        visitorId,
+        createdAt: serverTimestamp()
+      });
+
+      const result = document.getElementById("result");
+      result.textContent = choice === "YES" ? "Awesome! 😊 Thanks for your feedback!" : "No worries! 😊 Thanks for your feedback!";
+      result.style.display = "block";
+    } catch (error) {
+      console.error(error);
+      buttons.forEach(b => b.disabled = false);
+      alert("Could not save your response. Please try again.");
+    }
+  }
+
+  document.querySelectorAll("button").forEach(button => {
+    button.addEventListener("click", () => answer(button.dataset.answer));
+  });
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const usernameInput = document.querySelector("#username, input[name='username']");
+  const questionArea = document.getElementById("question-area");
+  const continueBtn = document.querySelector("#continueBtn, #submitUsername, button[type='submit']");
+
+  function revealQuestion() {
+    if (usernameInput && usernameInput.value.trim() && questionArea) {
+      questionArea.classList.add("show");
+    }
+  }
+
+  if (continueBtn) continueBtn.addEventListener("click", () => setTimeout(revealQuestion, 50));
+});
+</script>
+
+</body>
+</html>
