@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>MITHANS • Admin</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#f4f5f7;font-family:Arial,sans-serif;color:#111}
+    header{background:#111;color:#fff;padding:20px 5%;display:flex;justify-content:space-between;align-items:center}
+    header b{letter-spacing:3px}.wrap{width:min(1100px,92%);margin:30px auto}.login,.dashboard{background:#fff;border-radius:18px;padding:25px;box-shadow:0 8px 30px #0001}
+    input{padding:13px;width:100%;border:1px solid #ddd;border-radius:10px;margin:7px 0 14px;font-size:16px}
+    .btn{padding:12px 18px;border:0;border-radius:10px;background:#111;color:#fff;font-weight:700;cursor:pointer}.danger{background:#d33}
+    .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin:20px 0}.stat{padding:20px;border-radius:15px;background:#fafafa}.stat strong{display:block;font-size:30px;margin-top:8px}
+    .table-wrap{overflow:auto}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:13px;border-bottom:1px solid #eee;white-space:nowrap}
+    .hidden{display:none}.error{color:#c00;margin:10px 0}.small{color:#777;font-size:13px}
+    @media(max-width:650px){.cards{grid-template-columns:1fr}.wrap{width:94%}}
+  </style>
+</head>
+<body>
+<header><b>MITHANS</b><span>ADMIN DASHBOARD</span></header>
+<div class="wrap">
+  <section id="login" class="login">
+    <h2>Admin Login</h2>
+    <input id="email" type="email" placeholder="Admin email">
+    <input id="password" type="password" placeholder="Password">
+    <button id="loginBtn" class="btn">Login</button>
+    <p id="loginError" class="error"></p>
+  </section>
+
+  <section id="dashboard" class="dashboard hidden">
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+      <h2>Responses</h2><button id="logoutBtn" class="btn danger">Logout</button>
+    </div>
+    <div class="cards">
+      <div class="stat">Total<strong id="total">0</strong></div>
+      <div class="stat">YES ❤️<strong id="yes">0</strong></div>
+      <div class="stat">NO 😅<strong id="no">0</strong></div>
+    </div>
+    <p class="small">Only authenticated admins can read responses.</p>
+    <div class="table-wrap">
+      <table><thead><tr><th>Username</th><th>Answer</th><th>Time</th></tr></thead>
+      <tbody id="rows"></tbody></table>
+    </div>
+  </section>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+  import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyD5uVOkqlPUdiJBJQjjof9CJ-iuYL5fiu0",
+    authDomain: "mithans11-babc0.firebaseapp.com",
+    projectId: "mithans11-babc0",
+    storageBucket: "mithans11-babc0.firebasestorage.app",
+    messagingSenderId: "775548184836",
+    appId: "1:775548184836:web:7626bc31a04404293b4851"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const login = document.getElementById("login");
+  const dashboard = document.getElementById("dashboard");
+  const error = document.getElementById("loginError");
+
+  document.getElementById("loginBtn").onclick = async () => {
+    error.textContent = "";
+    try {
+      await signInWithEmailAndPassword(auth, email.value.trim(), password.value);
+    } catch(e) {
+      error.textContent = "Login failed. Check email/password.";
+    }
+  };
+
+  document.getElementById("logoutBtn").onclick = () => signOut(auth);
+
+  onAuthStateChanged(auth, user => {
+    if (!user) {
+      login.classList.remove("hidden");
+      dashboard.classList.add("hidden");
+      return;
+    }
+
+    login.classList.add("hidden");
+    dashboard.classList.remove("hidden");
+
+    const q = query(collection(db, "responses"), orderBy("createdAt", "desc"));
+    onSnapshot(q, snap => {
+      let yes = 0, no = 0;
+      const rows = document.getElementById("rows");
+      rows.innerHTML = "";
+
+      snap.forEach(doc => {
+        const d = doc.data();
+        if (d.answer === "YES") yes++;
+        if (d.answer === "NO") no++;
+
+        const tr = document.createElement("tr");
+        const username = document.createElement("td");
+        username.textContent = d.username ? "@" + d.username : "Not provided";
+        const answer = document.createElement("td");
+        answer.textContent = d.answer || "";
+        const time = document.createElement("td");
+        time.textContent = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleString() : "Saving...";
+        tr.append(username, answer, time);
+        rows.appendChild(tr);
+      });
+
+      document.getElementById("total").textContent = snap.size;
+      document.getElementById("yes").textContent = yes;
+      document.getElementById("no").textContent = no;
+    });
+  });
+</script>
+</body>
+</html>
